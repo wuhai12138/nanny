@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.summ.nanny.mapper.JOrderScheduleMapper">
+
+    <select id="getOrderSchedule" parameterType="com.summ.nanny.model.request.ScheduleReq"
+            resultType="com.summ.nanny.model.response.ScheduleRes">
+        SELECT j.*,jgc.price,jdi1.INFO AS scheduleStatusInfo,jch.houseAddress,jdi2.info as payStatusInfo,jni.nannyName,js.shopName,js.shopMobile,js.shopPhone,jgc.service as goodsName,jc.customerName
+        FROM j_order_schedule j
+        LEFT JOIN j_goods_contract jgc ON j.goodsId=jgc.goodsId
+        LEFT JOIN j_dict_info jdi1 ON jdi1.ID=j.scheduleStatus
+        LEFT JOIN j_dict_info jdi2 ON jdi2.ID=j.payStatus
+        left join j_schedule_nanny jsn on jsn.scheduleId=j.scheduleId
+        left join j_customer_house jch on jch.houseId=j.houseId
+        left join j_nanny_info jni on jni.nannyId=jsn.nannyId
+        left join j_shop js on js.shopId=j.shopId
+        left join j_customer jc on jc.customerId=j.customerId
+        WHERE jsn.nannyId=#{scheduleReq.nannyId}
+        AND j.scheduleDate BETWEEN #{scheduleReq.startDate} AND #{scheduleReq.endDate}
+        <if test="0!=scheduleReq.scheduleStatus">
+           and j.scheduleStatus=#{scheduleReq.scheduleStatus}
+        </if>
+        <if test="0!=scheduleReq.payStatus">
+           and j.payStatus=#{scheduleReq.payStatus}
+        </if>
+        ORDER BY j.scheduleDate,j.startTime
+        limit #{scheduleReq.page},#{scheduleReq.size}
+    </select>
+
+    <select id="getScheduleByScheduleId" resultType="com.summ.nanny.model.response.ScheduleRes">
+        SELECT jos.*,d3.INFO AS nannyCurrentPayment,jgc.price AS scheduleCurrentPrice,jni.nannyStatus,jni.dataSignStatus,jni.nannyLevel,jsn.nannyId,jch.longitude,jch.latitude
+        FROM j_order_schedule jos
+        LEFT JOIN j_schedule_nanny jsn ON jsn.scheduleId = jos.scheduleId
+        LEFT JOIN j_nanny_info jni ON jni.nannyId = jsn.nannyId
+        LEFT JOIN j_dict_info d3 ON d3.ID = jni.nannyLevel
+        LEFT JOIN j_goods_contract jgc ON jgc.goodsId = jos.goodsId
+        left join j_customer_house jch on jch.houseId=jos.houseId
+        WHERE jos.scheduleId = #{0}
+    </select>
+
+    <select id="getNannyRankingsWorkTimes" parameterType="com.summ.nanny.model.request.NannyRankingsReq"
+            resultType="com.summ.nanny.model.response.NannyRankingsRes">
+        SELECT jni.nannyName,SUM(j.endTime-j.startTime) AS workTimes,jni.nannyId
+        FROM j_order_schedule j
+        LEFT JOIN j_schedule_nanny jsn ON jsn.scheduleId=j.scheduleId
+        LEFT JOIN j_nanny_info jni ON jni.nannyId=jsn.nannyId
+        where jni.isDel=16
+        and j.scheduleStatus=153
+        and j.clockTime between #{nannyRankingsReq.startDate} and #{nannyRankingsReq.endDate}
+        GROUP BY jsn.nannyId
+        ORDER BY workTimes DESC,nannyId
+        LIMIT #{nannyRankingsReq.page},#{nannyRankingsReq.size}
+    </select>
+    <select id="getCustomerCount" parameterType="com.summ.nanny.model.request.NannyRankingsReq"
+            resultType="java.lang.Integer">
+        SELECT
+	COUNT(a.customerId)
+FROM
+	(
+		SELECT
+			j.customerId
+		FROM
+			j_order_schedule j
+		LEFT JOIN j_schedule_nanny jsn ON jsn.scheduleId = j.scheduleId
+		LEFT JOIN j_nanny_info jni ON jni.nannyId = jsn.nannyId
+		WHERE
+			jni.isDel = 16
+		AND j.scheduleStatus = 153
+		AND j.clockTime  between #{nannyRankingsReq.startDate} and #{nannyRankingsReq.endDate}
+		AND jsn.nannyId = #{nannyRankingsReq.nannyId}
+		GROUP BY
+			j.customerId
+	) AS a
+    </select>
+    <select id="getNannyRankingsPraises" parameterType="com.summ.nanny.model.request.NannyRankingsReq"
+            resultType="com.summ.nanny.model.response.NannyRankingsRes">
+        SELECT j.nannyId,jni.nannyName,COUNT(j.nannyId) as praises
+        FROM j_schedule_nanny j
+        LEFT JOIN j_nanny_info jni on jni.nannyId=j.nannyId
+        WHERE
+          j.staring="3"
+        GROUP BY j.nannyId
+        order by praises desc,nannyId
+
+    </select>
+
+    <select id="getOrderCount" resultType="com.summ.nanny.model.response.OrderRes">
+        SELECT
+        COUNT(
+		CASE j.scheduleStatus
+		WHEN 152 THEN
+			152
+		END
+	) AS working,
+	COUNT(
+		CASE j.scheduleStatus
+		WHEN 153 THEN
+			153
+		END
+	) AS finished,
+	COUNT(
+		CASE j.scheduleStatus
+		WHEN 155 THEN
+			155
+		END
+	) AS cancel
+        FROM
+	    j_order_schedule j
+        LEFT JOIN j_schedule_nanny jsn ON jsn.scheduleId = j.scheduleId
+        WHERE
+        jsn.nannyId = #{0}
+    </select>
+
+    <select id="signNannySchedule" parameterType="java.util.Map" resultType="com.summ.nanny.model.JOrderSchedule">
+        SELECT
+        j.*
+        FROM
+        j_order_schedule j
+        LEFT JOIN j_schedule_nanny jsn ON jsn.scheduleId = j.scheduleId
+        WHERE
+        jsn.nannyId = #{map.nannyId}
+        AND j.isDel=16
+        AND j.scheduleStatus != 155
+        AND j.scheduleDate BETWEEN #{map.startDate}
+        AND #{map.endDate}
+        AND (
+        (
+        #{map.startId} &lt; j.startTime
+        AND j.startTime &lt; #{map.endId}
+        )
+        OR (
+        #{map.startId} &lt; j.endTime
+        AND j.endTime &lt; #{map.endId}
+        )
+        OR (
+        j.startTime &lt; #{map.startId}
+        AND j.endTime &gt; #{map.endId}
+        )
+        OR (
+        j.startTime &gt; #{map.startId}
+        AND j.endTime &lt; #{map.endId}
+        )
+        OR (j.endTime = #{map.endId})
+        OR (#{map.startId} = j.startTime)
+        )
+        <foreach collection="map.weekList" index="index" item="item" open=" AND j.weekday IN (" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+</mapper>

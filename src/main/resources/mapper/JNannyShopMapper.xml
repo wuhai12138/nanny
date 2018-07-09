@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.summ.nanny.mapper.JNannyShopMapper">
+
+    <select id="getShopByNannyId" resultType="com.summ.nanny.model.JShop">
+        select j.*
+        from j_shop j
+        left join j_nanny_shop jns on jns.shopId=j.shopId
+        where jns.nannyId=#{0}
+        group by j.shopId
+    </select>
+</mapper>

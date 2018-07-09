@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.summ.nanny.mapper.JDictInfoMapper">
+
+
+    <select id="getJobLevelByNannyId" resultType="com.summ.nanny.model.JDictInfo">
+        select j.*
+        from j_dict_info j
+        left join j_nanny_job_level jns on jns.jobLevelId=j.ID
+        where jns.nannyId=#{0}
+    </select>
+
+    <select id="getList" resultType="com.summ.nanny.model.JDictInfo">
+		SELECT *
+		FROM j_dict_info
+		WHERE TYPECODE = #{typeCode}
+		AND isDel=16
+	</select>
+</mapper>

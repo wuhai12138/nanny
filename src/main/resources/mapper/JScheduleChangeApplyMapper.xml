@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.summ.nanny.mapper.JScheduleChangeApplyMapper">
+
+    <select id="getChangeByCustomer" resultType="com.summ.nanny.model.response.ScheduleChangeApplyRes">
+SELECT
+	j.*, jdi1.INFO AS applyStatusInfo,
+	jdi2.INFO AS applyTypeInfo,
+	jc.customerName,
+	jc.customerPhone,
+	jos.scheduleDate AS orScheduleDate,
+	jos.endTime AS orEndTime,
+	jos.endTimeValue AS orEndTimeValue,
+	jos.startTime AS orStartTime,
+	jos.startTimeValue AS orStartTimeValue,
+	jch.houseAddress,
+	jgc.service
+FROM
+	j_schedule_change_apply j
+LEFT JOIN j_dict_info jdi1 ON jdi1.ID = j.applyStatus
+LEFT JOIN j_dict_info jdi2 ON jdi2.ID = j.applyType
+LEFT JOIN j_customer jc ON j.customerId = jc.customerId
+INNER JOIN j_order_schedule jos ON j.scheduleId = jos.scheduleId
+LEFT JOIN j_customer_house jch ON jos.houseId = jch.houseId
+LEFT JOIN j_goods_contract jgc ON jos.goodsId = jgc.goodsId
+        where j.isDel=16
+        and j.customerID=#{0}
+    </select>
+
+    <select id="getChangeByNanny" resultType="com.summ.nanny.model.response.ScheduleChangeApplyRes">
+SELECT
+	j.*, jdi1.INFO AS applyStatusInfo,
+	jdi2.INFO AS applyTypeInfo,
+	jc.customerName,
+	jc.customerPhone,
+	jos.scheduleDate AS orScheduleDate,
+	jos.endTime AS orEndTime,
+	jos.endTimeValue AS orEndTimeValue,
+	jos.startTime AS orStartTime,
+	jos.startTimeValue AS orStartTimeValue,
+	jch.houseAddress,
+	jgc.service
+FROM
+	j_schedule_change_apply j
+LEFT JOIN j_dict_info jdi1 ON jdi1.ID = j.applyStatus
+LEFT JOIN j_dict_info jdi2 ON jdi2.ID = j.applyType
+LEFT JOIN j_customer jc ON j.customerId = jc.customerId
+INNER JOIN j_order_schedule jos ON j.scheduleId = jos.scheduleId
+LEFT JOIN j_customer_house jch ON jos.houseId = jch.houseId
+LEFT JOIN j_goods_contract jgc ON jos.goodsId = jgc.goodsId
+        where j.isDel=16
+        and j.nannyId=#{0}
+    </select>
+</mapper>
